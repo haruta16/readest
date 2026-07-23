@@ -251,6 +251,25 @@ export interface ReadestCloudSettings {
 }
 
 /**
+ * Settings for the Custom LLM Translator (OpenAI-compatible provider).
+ * Supports any endpoint that speaks the OpenAI `/v1/chat/completions` protocol:
+ * OpenAI, DeepSeek, Ollama, Qwen, Zhipu, local vLLM, etc.
+ */
+export interface CompatibleTranslatorSettings {
+  /** OpenAI-compatible API base URL, e.g. https://api.openai.com/v1 */
+  apiBaseUrl: string;
+  /** API key / bearer token */
+  apiKey: string;
+  /** Model name, e.g. gpt-4o, deepseek-chat, qwen-turbo */
+  model: string;
+  /** Temperature (0–2). Default 0.1 for consistent translations. */
+  temperature?: number;
+  /** Override the built-in translation system prompt. Supports
+   * {sourceLang} and {targetLang} placeholders. */
+  systemPrompt?: string;
+}
+
+/**
  * User-facing sync categories. 'progress' gates the existing book-config
  * (reading progress) sync, 'note' gates annotations, 'book' gates book
  * binaries + metadata, 'dictionary' gates the imported-dictionary replica
@@ -422,6 +441,13 @@ export interface SystemSettings {
   onedrive: OneDriveSettings;
 
   aiSettings: AISettings;
+  /**
+   * Configuration for the Custom LLM Translator (OpenAI-compatible).
+   * User-supplied credentials and preferences for any API that speaks the
+   * OpenAI chat completions protocol (OpenAI, DeepSeek, Ollama, Qwen, etc.).
+   * Device-local (API keys never sync across devices).
+   */
+  compatibleTranslator: CompatibleTranslatorSettings;
   /**
    * Per-device id used as the deviceId portion of every HLC this device
    * mints. Lazy-generated on first sync init via uuidv4 (mirrors

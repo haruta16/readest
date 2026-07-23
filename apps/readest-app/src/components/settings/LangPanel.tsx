@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
-import { saveViewSettings } from '@/helpers/settings';
+import { saveViewSettings, saveSysSettings } from '@/helpers/settings';
 import {
   getTranslatorDisplayLabel,
   getTranslators,
@@ -25,6 +25,7 @@ import {
   SettingsSelect,
   SettingsSwitchRow,
 } from './primitives';
+import SettingsInput from './primitives/SettingsInput';
 import CustomDictionaries from './CustomDictionaries';
 import WordLensPanel from './WordLensPanel';
 import { PiTranslate } from 'react-icons/pi';
@@ -35,6 +36,8 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
   const { envConfig } = useEnv();
   const { settings, applyUILanguage, activeSettingsItemId, setActiveSettingsItemId } =
     useSettingsStore();
+  const compatibleApiKey = settings?.compatibleTranslator?.apiKey;
+  const hasToken = !!token || !!compatibleApiKey;
   const { getView, getViewSettings, setViewSettings, recreateViewer } = useReaderStore();
   const view = getView(bookKey);
   const viewSettings = getViewSettings(bookKey) || settings.globalViewSettings;
@@ -53,6 +56,67 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
   );
   const [showCustomDictionaries, setShowCustomDictionaries] = useState(false);
   const [showWordLens, setShowWordLens] = useState(false);
+
+  // Compatible LLM translator config (global settings)
+  const [compatApiBaseUrl, setCompatApiBaseUrl] = useState(
+    settings.compatibleTranslator?.apiBaseUrl || 'https://api.deepseek.com',
+  );
+  const [compatApiKey, setCompatApiKey] = useState(settings.compatibleTranslator?.apiKey || '');
+  const [compatModel, setCompatModel] = useState(
+    settings.compatibleTranslator?.model || 'deepseek-v4-flash',
+  );
+  const [compatTemperature, setCompatTemperature] = useState(
+    String(settings.compatibleTranslator?.temperature ?? 0.3),
+  );
+  const [compatSystemPrompt, setCompatSystemPrompt] = useState(
+    settings.compatibleTranslator?.systemPrompt || '',
+  );
+
+  const saveCompatibleConfig = (patch: Record<string, string | number>) => {
+    const current = { ...settings.compatibleTranslator };
+    const updated = {
+      apiBaseUrl: current.apiBaseUrl || 'https://api.deepseek.com',
+      apiKey: current.apiKey || '',
+      model: current.model || 'deepseek-v4-flash',
+      temperature: current.temperature ?? 0.3,
+      systemPrompt: current.systemPrompt || '',
+      ...patch,
+    };
+    saveSysSettings(envConfig, 'compatibleTranslator', updated);
+  };
+
+  const handleCompatApiBaseUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setCompatApiBaseUrl(val);
+    saveCompatibleConfig({ apiBaseUrl: val });
+  };
+
+  const handleCompatApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setCompatApiKey(val);
+    saveCompatibleConfig({ apiKey: val });
+  };
+
+  const handleCompatModelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setCompatModel(val);
+    saveCompatibleConfig({ model: val });
+  };
+
+  const handleCompatTemperatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setCompatTemperature(val);
+    const num = parseFloat(val);
+    if (!isNaN(num)) {
+      saveCompatibleConfig({ temperature: Math.max(0, Math.min(2, num)) });
+    }
+  };
+
+  const handleCompatSystemPromptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setCompatSystemPrompt(val);
+    saveCompatibleConfig({ systemPrompt: val });
+  };
 
   // Android Back / Esc: when a sub-page is open, intercept and step back to the
   // language list instead of letting <Dialog>'s listener close the whole
@@ -124,7 +188,7 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
   const getTranslationProviderOptions = () => {
     return getTranslators().map((t) => ({
       value: t.name,
-      label: getTranslatorDisplayLabel(t, !!token, _),
+      label: getTranslatorDisplayLabel(t, hasToken, _),
       // Providers marked `disabled` (e.g. upstream relay is down) stay in the
       // dropdown so users can see them, but cannot be selected.
       disabled: !!t.disabled,
@@ -134,7 +198,7 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
   const getCurrentTranslationProviderOption = () => {
     const value = translationProvider;
     const allProviders = getTranslationProviderOptions();
-    const availableTranslators = getTranslators().filter((t) => isTranslatorAvailable(t, !!token));
+    const availableTranslators = getTranslators().filter((t) => isTranslatorAvailable(t, hasToken));
     const currentProvider = availableTranslators.find((t) => t.name === value)
       ? value
       : availableTranslators[0]?.name;
@@ -370,6 +434,62 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
           />
         </SettingsRow>
       </BoxedList>
+
+      {translationProvider === 'compatible' && (
+        <BoxedList
+          title={_('Custom LLM Translator')}
+          data-setting-id='settings.language.compatibleTranslator'
+        >
+          <SettingsRow label={_('API Base URL')}>
+            <SettingsInput
+              type='url'
+              value={compatApiBaseUrl}
+              onChange={handleCompatApiBaseUrlChange}
+              placeholder='https://api.deepseek.com'
+              aria-label={_('API Base URL')}
+            />
+          </SettingsRow>
+          <SettingsRow label={_('API Key')}>
+            <SettingsInput
+              type='password'
+              value={compatApiKey}
+              onChange={handleCompatApiKeyChange}
+              placeholder='sk-...'
+              aria-label={_('API Key')}
+            />
+          </SettingsRow>
+          <SettingsRow label={_('Model')}>
+            <SettingsInput
+              type='text'
+              value={compatModel}
+              onChange={handleCompatModelChange}
+              placeholder='deepseek-v4-flash'
+              aria-label={_('Model')}
+            />
+          </SettingsRow>
+          <SettingsRow label={_('Temperature')}>
+            <SettingsInput
+              type='number'
+              value={compatTemperature}
+              onChange={handleCompatTemperatureChange}
+              placeholder='0.3'
+              min='0'
+              max='2'
+              step='0.1'
+              aria-label={_('Temperature')}
+            />
+          </SettingsRow>
+          <SettingsRow label={_('Custom Prompt')}>
+            <SettingsInput
+              type='text'
+              value={compatSystemPrompt}
+              onChange={handleCompatSystemPromptChange}
+              placeholder={_('Default prompt is used when empty')}
+              aria-label={_('Custom System Prompt')}
+            />
+          </SettingsRow>
+        </BoxedList>
+      )}
 
       {(isCJKEnv() || view?.language.isCJK) && (
         <BoxedList title={_('Punctuation')} data-setting-id='settings.language.quotationMarks'>

@@ -12,6 +12,7 @@ import { polish, preprocess } from '@/services/translators';
 import { eventDispatcher } from '@/utils/event';
 import { getLocale } from '@/utils/misc';
 import { useTranslation } from './useTranslation';
+import { useSettingsStore } from '@/store/settingsStore';
 
 export function useTranslator({
   provider = 'deepl',
@@ -32,7 +33,9 @@ export function useTranslator({
   }, [provider, sourceLang, targetLang]);
 
   useEffect(() => {
-    const availableTranslators = getTranslators().filter((t) => isTranslatorAvailable(t, !!token));
+    const compatibleApiKey = useSettingsStore.getState().settings?.compatibleTranslator?.apiKey;
+    const hasToken = !!token || !!compatibleApiKey;
+    const availableTranslators = getTranslators().filter((t) => isTranslatorAvailable(t, hasToken));
     const selectedTranslator =
       availableTranslators.find((t) => t.name === provider) || availableTranslators[0]!;
     const selectedProviderName = selectedTranslator.name as TranslatorName;
@@ -94,11 +97,16 @@ export function useTranslator({
         if (!translator) {
           throw new Error(`No translator found for provider: ${selectedProvider}`);
         }
+        // For the compatible provider, use the API key from settings rather than the auth token
+        const effectiveToken =
+          selectedProvider === 'compatible'
+            ? useSettingsStore.getState().settings?.compatibleTranslator?.apiKey
+            : token;
         const translatedTexts = await translator.translate(
           textsNeedingTranslation,
           sourceLanguage,
           targetLanguage,
-          token,
+          effectiveToken || null,
           useCache,
         );
 

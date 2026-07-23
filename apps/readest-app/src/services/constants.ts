@@ -202,6 +202,13 @@ export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
   s3: DEFAULT_S3_SETTINGS,
   onedrive: DEFAULT_ONEDRIVE_SETTINGS,
   aiSettings: DEFAULT_AI_SETTINGS,
+  compatibleTranslator: {
+    apiBaseUrl: 'https://api.deepseek.com',
+    apiKey: '',
+    model: 'deepseek-v4-flash',
+    temperature: 0.3,
+    systemPrompt: '',
+  },
 
   lastSyncedAtBooks: 0,
   lastSyncedAtConfigs: 0,

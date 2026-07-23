@@ -3,6 +3,7 @@ import { deeplProvider } from './deepl';
 import { azureProvider } from './azure';
 import { googleProvider } from './google';
 import { yandexProvider } from './yandex';
+import { compatibleProvider } from './compatible';
 
 function createTranslator<T extends string>(
   name: T,
@@ -21,11 +22,14 @@ const azureTranslator = createTranslator('azure', azureProvider);
 const googleTranslator = createTranslator('google', googleProvider);
 const yandexTranslator = createTranslator('yandex', yandexProvider);
 
+const compatibleTranslator = createTranslator('compatible', compatibleProvider);
+
 const availableTranslators = [
   deeplTranslator,
   azureTranslator,
   googleTranslator,
   yandexTranslator,
+  compatibleTranslator,
   // Add more translators here
 ];
 

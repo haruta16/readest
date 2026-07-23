@@ -50,6 +50,8 @@ const TranslatorPopup: React.FC<TranslatorPopupProps> = ({
   const _ = useTranslation();
   const { token } = useAuth();
   const { settings, setSettings } = useSettingsStore();
+  const compatibleApiKey = settings?.compatibleTranslator?.apiKey;
+  const hasToken = !!token || !!compatibleApiKey;
   const [providers, setProviders] = useState<TranslatorType[]>([]);
   const [sourceLang, setSourceLang] = useState('AUTO');
   const [targetLang, setTargetLang] = useState(settings.globalReadSettings.translateTargetLang);
@@ -77,7 +79,7 @@ const TranslatorPopup: React.FC<TranslatorPopupProps> = ({
 
   const handleProviderChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const requestedProvider = event.target.value;
-    const availableTranslators = getTranslators().filter((t) => isTranslatorAvailable(t, !!token));
+    const availableTranslators = getTranslators().filter((t) => isTranslatorAvailable(t, hasToken));
     const selectedTranslator =
       availableTranslators.find((t) => t.name === requestedProvider) || availableTranslators[0]!;
     if (selectedTranslator) {
@@ -90,7 +92,7 @@ const TranslatorPopup: React.FC<TranslatorPopupProps> = ({
   useEffect(() => {
     const availableProviders = translators.map((t) => ({
       name: t.name,
-      label: getTranslatorDisplayLabel(t, !!token, _),
+      label: getTranslatorDisplayLabel(t, hasToken, _),
       disabled: !!t.disabled,
     }));
     setProviders(availableProviders);
@@ -119,7 +121,7 @@ const TranslatorPopup: React.FC<TranslatorPopupProps> = ({
         }
       } catch (err) {
         console.error(err);
-        if (!token) {
+        if (!hasToken) {
           setError(_('Unable to fetch the translation. Please log in first and try again.'));
         } else {
           setError(_('Unable to fetch the translation. Try again later.'));
