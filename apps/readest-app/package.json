@@ -14,6 +14,7 @@
     "build-web:vinext": "dotenv -e .env.web -- vinext build",
     "start-web:vinext": "dotenv -e .env.web -- vinext start",
     "build-tauri": "dotenv -e .env.tauri -- next build",
+    "build:local": "tauri build --no-sign",
     "build-browser-ext": "pnpm --filter @readest/send-to-readest-extension build",
     "upload-sourcemaps": "node scripts/upload-sourcemaps.mjs",
     "dev-android": "tauri android build -t aarch64 -- --features devtools && adb install -r src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk",
