@@ -271,8 +271,8 @@ describe('getReadyFileSyncBackends', () => {
     expect(getReadyFileSyncBackends(settings)).toEqual(['webdav', 'gdrive']);
   });
 
-  test('excludes everything when the plan gate pauses third-party sync', () => {
+  test('free plan can sync third-party backends while the paywall is off', () => {
     setCachedUserPlan('free');
-    expect(getReadyFileSyncBackends(settings)).toEqual([]);
+    expect(getReadyFileSyncBackends(settings)).toEqual(['webdav', 'gdrive']);
   });
 });
